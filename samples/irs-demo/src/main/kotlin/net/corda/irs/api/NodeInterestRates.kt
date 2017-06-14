@@ -5,6 +5,7 @@ import net.corda.contracts.BusinessCalendar
 import net.corda.contracts.Fix
 import net.corda.contracts.FixOf
 import net.corda.contracts.Tenor
+import net.corda.core.FiberBox
 import net.corda.core.RetryableException
 import net.corda.core.contracts.Command
 import net.corda.core.crypto.DigitalSignature
@@ -18,6 +19,7 @@ import net.corda.contracts.math.Interpolator
 import net.corda.contracts.math.InterpolatorFactory
 import net.corda.core.node.PluginServiceHub
 import net.corda.core.node.ServiceHub
+import net.corda.core.node.services.AcceptsFileUpload
 import net.corda.core.node.services.CordaService
 import net.corda.core.node.services.ServiceType
 import net.corda.core.serialization.SingletonSerializeAsToken
@@ -25,13 +27,6 @@ import net.corda.core.transactions.FilteredTransaction
 import net.corda.core.utilities.ProgressTracker
 import net.corda.core.utilities.unwrap
 import net.corda.irs.flows.RatesFixFlow
-import net.corda.node.services.api.AcceptsFileUpload
-import net.corda.node.utilities.AbstractJDBCHashSet
-import net.corda.node.utilities.FiberBox
-import net.corda.node.utilities.JDBCHashedTable
-import net.corda.node.utilities.localDate
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.statements.InsertStatement
 import java.io.InputStream
 import java.math.BigDecimal
 import java.security.PublicKey
@@ -39,6 +34,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.*
 import javax.annotation.concurrent.ThreadSafe
+import kotlin.collections.HashSet
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
@@ -104,26 +100,9 @@ object NodeInterestRates {
             val type = ServiceType.corda.getSubType("interest_rates")
         }
 
-        private object Table : JDBCHashedTable("demo_interest_rate_fixes") {
-            val name = varchar("index_name", length = 255)
-            val forDay = localDate("for_day")
-            val ofTenor = varchar("of_tenor", length = 16)
-            val value = decimal("value", scale = 20, precision = 16)
-        }
-
         private class InnerState {
-            val fixes = object : AbstractJDBCHashSet<Fix, Table>(Table) {
-                override fun elementFromRow(row: ResultRow): Fix {
-                    return Fix(FixOf(row[table.name], row[table.forDay], Tenor(row[table.ofTenor])), row[table.value])
-                }
-
-                override fun addElementToInsert(insert: InsertStatement, entry: Fix, finalizables: MutableList<() -> Unit>) {
-                    insert[table.name] = entry.of.name
-                    insert[table.forDay] = entry.of.forDay
-                    insert[table.ofTenor] = entry.of.ofTenor.name
-                    insert[table.value] = entry.value
-                }
-            }
+            // TODO Update this to use a database once we have an database API
+            val fixes = HashSet<Fix>()
             var container: FixContainer = FixContainer(fixes)
         }
 

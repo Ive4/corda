@@ -1,4 +1,4 @@
-package net.corda.irs.testing
+package net.corda.irs.api
 
 import net.corda.contracts.Fix
 import net.corda.contracts.FixOf
@@ -18,7 +18,6 @@ import net.corda.core.utilities.ALICE
 import net.corda.core.utilities.DUMMY_NOTARY
 import net.corda.core.utilities.LogHelper
 import net.corda.core.utilities.ProgressTracker
-import net.corda.irs.api.NodeInterestRates
 import net.corda.irs.flows.RatesFixFlow
 import net.corda.node.utilities.configureDatabase
 import net.corda.node.utilities.transaction

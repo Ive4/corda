@@ -1,6 +1,5 @@
-package net.corda.node.utilities
+package net.corda.core
 
-import net.corda.core.MutableClock
 import net.corda.core.serialization.SerializeAsToken
 import net.corda.core.serialization.SerializeAsTokenContext
 import net.corda.core.serialization.SingletonSerializationToken.Companion.singletonSerializationToken
@@ -8,7 +7,8 @@ import java.time.*
 import javax.annotation.concurrent.ThreadSafe
 
 /**
- * A [Clock] that can have the date advanced for use in demos.
+ * A [Clock] that can have the time advanced for use in testing. Set the "useTestClock" configuration in the node's conf
+ * file to "true" to enable this clock.
  */
 @ThreadSafe
 class TestClock(private var delegateClock: Clock = Clock.systemUTC()) : MutableClock(), SerializeAsToken {
@@ -16,6 +16,14 @@ class TestClock(private var delegateClock: Clock = Clock.systemUTC()) : MutableC
     private val token = singletonSerializationToken(javaClass)
 
     override fun toToken(context: SerializeAsTokenContext) = token.registerWithContext(context, this)
+
+    /**
+     * Advance this [Clock] by the specified [Duration] for testing purposes.
+     */
+    @Synchronized fun advanceBy(duration: Duration) {
+        delegateClock = offset(delegateClock, duration)
+        notifyMutationObservers()
+    }
 
     @Synchronized fun updateDate(date: LocalDate): Boolean {
         val currentDate = LocalDate.now(this)
@@ -28,11 +36,18 @@ class TestClock(private var delegateClock: Clock = Clock.systemUTC()) : MutableC
         return false
     }
 
+    /**
+     * Move this [Clock] to the specified [Instant] for testing purposes.
+     *
+     * This will only be approximate due to the time ticking away, but will be some time shortly after the requested [Instant].
+     */
+    @Synchronized fun setTo(newInstant: Instant) = advanceBy(Duration.between(instant(), newInstant))
+
     @Synchronized override fun instant(): Instant {
         return delegateClock.instant()
     }
 
-    // Do not use this. Instead seek to use ZonedDateTime methods.
+    @Deprecated("Do not use this. Instead seek to use ZonedDateTime methods.", level = DeprecationLevel.ERROR)
     override fun withZone(zone: ZoneId): Clock {
         throw UnsupportedOperationException("Tokenized clock does not support withZone()")
     }
@@ -40,5 +55,4 @@ class TestClock(private var delegateClock: Clock = Clock.systemUTC()) : MutableC
     @Synchronized override fun getZone(): ZoneId {
         return delegateClock.zone
     }
-
 }

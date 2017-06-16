@@ -5,7 +5,6 @@ import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.Suspendable
 import co.paralleluniverse.strands.Strand
 import com.google.common.util.concurrent.SettableFuture
-import net.corda.testing.node.TestClock
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
